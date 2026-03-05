@@ -3,8 +3,10 @@ const { chromium } = require("playwright");
 
 const app = express();
 
+/* aceita JSON */
 app.use(express.json());
 
+/* rota simples para teste */
 app.get("/", (req, res) => {
   res.send("robo detran online");
 });
@@ -19,7 +21,7 @@ app.post("/gerar", async (req, res) => {
 
     browser = await chromium.launch({
       headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+      args: ["--no-sandbox","--disable-setuid-sandbox"]
     });
 
     const page = await browser.newPage();
@@ -50,8 +52,10 @@ app.post("/gerar", async (req, res) => {
 
 });
 
-const PORT = process.env.PORT || 3000;
+/* PORTA OBRIGATÓRIA RAILWAY */
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log("robo detran rodando na porta", PORT);
+const PORT = process.env.PORT;
+
+app.listen(PORT, () => {
+  console.log("Servidor rodando na porta", PORT);
 });
