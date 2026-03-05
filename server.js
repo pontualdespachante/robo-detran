@@ -6,7 +6,7 @@ const app = express();
 /* aceita JSON */
 app.use(express.json());
 
-/* libera chamadas do navegador (Lovable, Hoppscotch etc) */
+/* libera chamadas do navegador */
 app.use((req,res,next)=>{
   res.header("Access-Control-Allow-Origin","*");
   res.header("Access-Control-Allow-Headers","Origin, X-Requested-With, Content-Type, Accept");
@@ -14,8 +14,13 @@ app.use((req,res,next)=>{
   next();
 });
 
-/* rota simples para verificar se o servidor está online */
-app.get("/", (req,res)=>{
+/* trata preflight */
+app.options("*",(req,res)=>{
+  res.sendStatus(200);
+});
+
+/* rota teste */
+app.get("/",(req,res)=>{
   res.send("robo detran online");
 });
 
@@ -23,20 +28,29 @@ app.post("/gerar", async (req, res) => {
 
   const dados = req.body;
 
+  if(!dados.placa || !dados.chassi || !dados.cpfCnpj){
+    return res.status(400).json({
+      status:"erro",
+      mensagem:"dados obrigatórios não enviados"
+    });
+  }
+
   let browser;
 
   try {
 
     browser = await chromium.launch({
-      headless: true,
-      args: ["--no-sandbox","--disable-setuid-sandbox"]
+      headless:true,
+      args:["--no-sandbox","--disable-setuid-sandbox"]
     });
 
     const page = await browser.newPage();
 
+    await page.setDefaultTimeout(60000);
+
     await page.goto(
       "https://detran.mg.gov.br/veiculos/transferencias/taxa-para-transferir-propriedade-de-veiculo-comprador/index/2",
-      { waitUntil: "networkidle" }
+      { waitUntil:"networkidle" }
     );
 
     /* ETAPA 1 */
@@ -49,8 +63,6 @@ app.post("/gerar", async (req, res) => {
     await page.fill('input[name="cpfCnpj"]', dados.cpfCnpj);
 
     await page.click('button:has-text("Próximo")');
-
-    /* aguarda página seguinte */
 
     await page.waitForURL("**completar-dados**");
 
@@ -91,11 +103,13 @@ app.post("/gerar", async (req, res) => {
 
     const html = await page.content();
 
-    await browser.close();
+    if(browser){
+      await browser.close();
+    }
 
     res.json({
-      status: "ok",
-      pagina: html
+      status:"ok",
+      pagina:html
     });
 
   } catch (erro) {
@@ -105,17 +119,16 @@ app.post("/gerar", async (req, res) => {
     }
 
     res.status(500).json({
-      status: "erro",
-      mensagem: erro.message
+      status:"erro",
+      mensagem:erro.message
     });
 
   }
 
 });
 
-/* porta dinâmica para Railway */
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log("Robo DETRAN rodando na porta", PORT);
+app.listen(PORT,()=>{
+  console.log("Robo DETRAN rodando na porta",PORT);
 });
