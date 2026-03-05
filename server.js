@@ -2,25 +2,44 @@ const express = require("express");
 const { chromium } = require("playwright");
 
 const app = express();
+
+/* aceita JSON */
 app.use(express.json());
+
+/* libera chamadas do navegador (Lovable, Hoppscotch etc) */
+app.use((req,res,next)=>{
+  res.header("Access-Control-Allow-Origin","*");
+  res.header("Access-Control-Allow-Headers","Origin, X-Requested-With, Content-Type, Accept");
+  res.header("Access-Control-Allow-Methods","GET,POST,OPTIONS");
+  next();
+});
+
+/* rota simples para verificar se o servidor está online */
+app.get("/", (req,res)=>{
+  res.send("robo detran online");
+});
 
 app.post("/gerar", async (req, res) => {
 
   const dados = req.body;
 
+  let browser;
+
   try {
 
-    const browser = await chromium.launch({
-      headless: true
+    browser = await chromium.launch({
+      headless: true,
+      args: ["--no-sandbox","--disable-setuid-sandbox"]
     });
 
     const page = await browser.newPage();
 
-    await page.goto("https://detran.mg.gov.br/veiculos/transferencias/taxa-para-transferir-propriedade-de-veiculo-comprador/index/2");
+    await page.goto(
+      "https://detran.mg.gov.br/veiculos/transferencias/taxa-para-transferir-propriedade-de-veiculo-comprador/index/2",
+      { waitUntil: "networkidle" }
+    );
 
-    await page.waitForLoadState("networkidle");
-
-    // ETAPA 1
+    /* ETAPA 1 */
 
     await page.fill('input[name="placa"]', dados.placa);
     await page.fill('input[name="chassi"]', dados.chassi);
@@ -31,11 +50,11 @@ app.post("/gerar", async (req, res) => {
 
     await page.click('button:has-text("Próximo")');
 
-    // aguarda carregar segunda página
+    /* aguarda página seguinte */
 
-    await page.waitForURL("**/completar-dados/**");
+    await page.waitForURL("**completar-dados**");
 
-    // ETAPA 2
+    /* ETAPA 2 */
 
     await page.fill('input[name="renavam"]', dados.renavam);
     await page.fill('input[name="valorRecibo"]', dados.valorRecibo);
@@ -81,7 +100,11 @@ app.post("/gerar", async (req, res) => {
 
   } catch (erro) {
 
-    res.json({
+    if(browser){
+      await browser.close();
+    }
+
+    res.status(500).json({
       status: "erro",
       mensagem: erro.message
     });
@@ -90,6 +113,9 @@ app.post("/gerar", async (req, res) => {
 
 });
 
-app.listen(3000, () => {
-  console.log("Robo DETRAN rodando");
+/* porta dinâmica para Railway */
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log("Robo DETRAN rodando na porta", PORT);
 });
