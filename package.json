@@ -1,18 +1,13 @@
 {
   "name": "robo-detran",
   "version": "1.0.0",
-  "description": "Robo para gerar taxas no DETRAN MG",
+  "description": "robo detran mg",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "postinstall": "npx playwright install chromium"
+    "start": "node server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
-    "express": "^5.2.1",
-    "playwright": "^1.58.2"
+    "express": "^4.18.2",
+    "playwright": "^1.41.2"
   }
 }
