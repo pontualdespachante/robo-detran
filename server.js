@@ -14,13 +14,8 @@ app.use((req,res,next)=>{
   next();
 });
 
-/* trata preflight */
-app.options("*",(req,res)=>{
-  res.sendStatus(200);
-});
-
-/* rota teste */
-app.get("/",(req,res)=>{
+/* rota simples para verificar se o servidor está online */
+app.get("/", (req,res)=>{
   res.send("robo detran online");
 });
 
@@ -28,20 +23,13 @@ app.post("/gerar", async (req, res) => {
 
   const dados = req.body;
 
-  if(!dados.placa || !dados.chassi || !dados.cpfCnpj){
-    return res.status(400).json({
-      status:"erro",
-      mensagem:"dados obrigatórios não enviados"
-    });
-  }
-
   let browser;
 
   try {
 
     browser = await chromium.launch({
-      headless:true,
-      args:["--no-sandbox","--disable-setuid-sandbox"]
+      headless: true,
+      args: ["--no-sandbox","--disable-setuid-sandbox"]
     });
 
     const page = await browser.newPage();
@@ -50,7 +38,7 @@ app.post("/gerar", async (req, res) => {
 
     await page.goto(
       "https://detran.mg.gov.br/veiculos/transferencias/taxa-para-transferir-propriedade-de-veiculo-comprador/index/2",
-      { waitUntil:"networkidle" }
+      { waitUntil: "networkidle" }
     );
 
     /* ETAPA 1 */
@@ -108,8 +96,8 @@ app.post("/gerar", async (req, res) => {
     }
 
     res.json({
-      status:"ok",
-      pagina:html
+      status: "ok",
+      pagina: html
     });
 
   } catch (erro) {
@@ -119,16 +107,18 @@ app.post("/gerar", async (req, res) => {
     }
 
     res.status(500).json({
-      status:"erro",
-      mensagem:erro.message
+      status: "erro",
+      mensagem: erro.message
     });
 
   }
 
 });
 
+/* porta dinâmica Railway */
+
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT,()=>{
-  console.log("Robo DETRAN rodando na porta",PORT);
+app.listen(PORT, () => {
+  console.log("Robo DETRAN rodando na porta", PORT);
 });
